@@ -1,0 +1,267 @@
+/* Neumorphic Soft-UI Styling based on User's HTML and CSS */
+
+.auth-page-wrapper {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #f0f4f8;
+  font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+  color: #777;
+  padding: 20px 15px;
+}
+
+.login {
+  width: 100%;
+  max-width: 380px;
+  padding: 35px 28px;
+  background: #e8edf3;
+  border-radius: 25px;
+  text-align: center;
+  box-shadow: 12px 12px 24px #cbcfd5, -12px -12px 24px #ffffff;
+  transition: all 0.3s ease;
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.login-brand-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #e8edf3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  color: #4bb3d0;
+  font-size: 20px;
+  box-shadow: 5px 5px 10px #cbd0d6, -5px -5px 10px #ffffff;
+}
+
+.login-brand-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #444;
+  letter-spacing: -0.2px;
+}
+
+.login-brand-sub {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.login h1 {
+  margin-bottom: 18px;
+  color: #555;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Tabs for Login / Sign Up */
+.auth-tabs {
+  display: flex;
+  background: #e8edf3;
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 20px;
+  box-shadow: inset 3px 3px 6px #cbd0d6, inset -3px -3px 6px #ffffff;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #888;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn.active {
+  background: #e8edf3;
+  color: #4bb3d0;
+  box-shadow: 4px 4px 8px #cbd0d6, -4px -4px 8px #ffffff;
+  font-weight: 700;
+}
+
+/* Neumorphic Inset Input */
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin: 14px 0;
+  padding: 0 15px;
+  border-radius: 12px;
+  background: #e8edf3;
+  box-shadow:
+    inset 4px 4px 7px 0px #cbd0d6,
+    inset -4px -4px 7px 0px #ffffff;
+  transition: all 0.2s ease;
+}
+
+.input:focus-within {
+  box-shadow:
+    inset 5px 5px 8px 0px #bec3c9,
+    inset -5px -5px 8px 0px #ffffff,
+    0 0 0 2px rgba(75, 179, 208, 0.3);
+}
+
+.input i {
+  width: 25px;
+  color: #777;
+  font-size: 14px;
+  text-align: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Enhanced from user's width: 100px to flex: 1 for comfortable full-width typing */
+.input input {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #444;
+  font-size: 13.5px;
+  font-family: inherit;
+}
+
+.input input::placeholder {
+  color: #9aa1a9;
+}
+
+/* Neumorphic Button */
+.login button.auth-btn {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  margin: 18px 0 10px 0;
+  border: 0;
+  border-radius: 25px;
+  background: #4bb3d0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 5px 5px 10px #cbd0d6, -5px -5px 10px #ffffff;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login button.auth-btn:hover {
+  background: #3fa1bd;
+  box-shadow: 3px 3px 7px #cbd0d6, -3px -3px 7px #ffffff;
+  transform: translateY(-1px);
+}
+
+.login button.auth-btn:active {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2);
+  transform: translateY(1px);
+}
+
+.login button.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary Button */
+.login button.auth-btn-secondary {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  margin: 6px 0;
+  border: 0;
+  border-radius: 25px;
+  background: #e8edf3;
+  color: #666;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: 4px 4px 8px #cbd0d6, -4px -4px 8px #ffffff;
+  transition: all 0.2s ease;
+}
+
+.login button.auth-btn-secondary:hover {
+  color: #444;
+  box-shadow: 2px 2px 5px #cbd0d6, -2px -2px 5px #ffffff;
+}
+
+/* Verification Code Banner */
+.verification-card {
+  background: #e8edf3;
+  border-radius: 18px;
+  padding: 16px;
+  margin: 12px 0 16px 0;
+  box-shadow: inset 3px 3px 6px #cbd0d6, inset -3px -3px 6px #ffffff;
+  text-align: center;
+}
+
+.verification-otp-display {
+  display: inline-block;
+  background: #4bb3d0;
+  color: white;
+  font-family: monospace;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  margin: 10px 0;
+  box-shadow: 3px 3px 6px #cbd0d6;
+}
+
+.login p {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #777;
+}
+
+.login a {
+  color: #4bb3d0;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.login a:hover {
+  text-decoration: underline;
+}
+
+/* Error and Alert Messages */
+.auth-alert {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-bottom: 14px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-alert-error {
+  background: #fde8e8;
+  color: #c81e1e;
+  box-shadow: inset 2px 2px 4px #f8b4b4;
+}
+
+.auth-alert-success {
+  background: #def7ec;
+  color: #03543f;
+  box-shadow: inset 2px 2px 4px #bcf0da;
+}
