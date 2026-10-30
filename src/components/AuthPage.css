@@ -200,28 +200,94 @@
   box-shadow: 2px 2px 5px #cbd0d6, -2px -2px 5px #ffffff;
 }
 
-/* Verification Code Banner */
+/* Verification Code Card */
 .verification-card {
   background: #e8edf3;
   border-radius: 18px;
-  padding: 16px;
+  padding: 18px 14px;
   margin: 12px 0 16px 0;
   box-shadow: inset 3px 3px 6px #cbd0d6, inset -3px -3px 6px #ffffff;
   text-align: center;
 }
 
-.verification-otp-display {
-  display: inline-block;
-  background: #4bb3d0;
-  color: white;
-  font-family: monospace;
-  font-size: 22px;
+.verification-channel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #444;
+  box-shadow: 2px 2px 5px #cbd0d6;
+  margin-bottom: 8px;
+}
+
+.verification-instruction {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0 2px 0;
+}
+
+.verification-phone-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 6px;
-  padding: 8px 18px;
+  color: #1e293b;
+  margin: 4px 0 6px 0;
+}
+
+.verification-subtext {
+  font-size: 11px;
+  color: #777;
+  margin-bottom: 12px;
+}
+
+.channel-action-btn {
+  width: 100%;
+  height: 42px;
   border-radius: 12px;
-  margin: 10px 0;
-  box-shadow: 3px 3px 6px #cbd0d6;
+  border: 0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 3px 3px 6px #cbd0d6, -3px -3px 6px #ffffff;
+}
+
+.channel-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Resend Countdown and Links */
+.resend-container {
+  margin: 12px 0 6px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.resend-timer {
+  color: #777;
+  font-size: 12px;
+}
+
+.resend-code-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4bb3d0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0 4px;
 }
 
 .login p {
@@ -263,4 +329,151 @@
   background: #def7ec;
   color: #03543f;
   box-shadow: inset 2px 2px 4px #bcf0da;
+}
+
+.incoming-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.incoming-popup-card {
+  width: min(100%, 380px);
+  overflow: hidden;
+  border: 1px solid #dbe3eb;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #334155;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+  animation: popup-enter 180ms ease-out;
+}
+
+.incoming-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #e8edf3;
+}
+
+.incoming-popup-app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.incoming-popup-app > i {
+  color: #4bb3d0;
+}
+
+.incoming-popup-time {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.incoming-popup-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.incoming-popup-close:hover {
+  background: #dce4ec;
+}
+
+.incoming-popup-body {
+  padding: 18px 18px 8px;
+}
+
+.incoming-popup-sender {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.incoming-popup-badge {
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #dff3f8;
+  color: #267c91;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.incoming-popup-text {
+  margin: 12px 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.incoming-popup-otp {
+  display: inline-block;
+  margin: 0 3px;
+  color: #0f172a;
+  font-family: monospace;
+  font-size: 20px;
+  letter-spacing: 3px;
+}
+
+.incoming-popup-footer {
+  display: flex;
+  gap: 10px;
+  padding: 10px 18px 18px;
+}
+
+.incoming-popup-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.incoming-popup-btn.btn-autofill {
+  flex: 1;
+  background: #4bb3d0;
+  color: #fff;
+}
+
+.incoming-popup-btn.btn-dismiss {
+  background: #e8edf3;
+  color: #475569;
+}
+
+@keyframes popup-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incoming-popup-card {
+    animation: none;
+  }
 }

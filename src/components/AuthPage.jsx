@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AuthPage.css';
 import {
   initiateRegistration,
   verifyAndCompleteRegistration,
-  loginUser
+  loginUser,
+  resendVerificationCode,
+  formatDisplayPhone
 } from '../services/auth';
 
 export default function AuthPage({ onLoginSuccess }) {
   // Modes: 'login' | 'register' | 'verify'
   const [mode, setMode] = useState('login');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -23,17 +28,59 @@ export default function AuthPage({ onLoginSuccess }) {
   const [pendingUser, setPendingUser] = useState(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [incomingNotification, setIncomingNotification] = useState(null);
 
-  // UI state
-  const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // Soft notification chime
+  const playNotificationSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch {
+      // Audio optional
+    }
+  };
+
+  const triggerNotification = (code) => {
+    setIncomingNotification({
+      code,
+    });
+    playNotificationSound();
+  };
+
+  // Resend countdown timer
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
 
   // Switch mode helper
   const handleSwitchMode = (newMode) => {
     setMode(newMode);
     setError(null);
     setSuccessMsg(null);
+    setIncomingNotification(null);
+  };
+
+  // Re-open incoming popup notification if closed
+  const handleShowPopupAgain = () => {
+    if (!verificationCode || !pendingUser) return;
+    triggerNotification(verificationCode);
   };
 
   // Handle Login submission
@@ -60,7 +107,7 @@ export default function AuthPage({ onLoginSuccess }) {
     }
   };
 
-  // Handle Registration submission -> triggers Verification step
+  // Handle registration and display the generated code in the in-app popup.
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -70,19 +117,44 @@ export default function AuthPage({ onLoginSuccess }) {
       const res = await initiateRegistration({
         username: regUsername,
         telephone: regTelephone,
-        password: regPassword,
+        password: regPassword
       });
 
       if (res.success) {
         setPendingUser(res.pendingUser);
         setVerificationCode(res.verificationCode);
         setMode('verify');
-        setSuccessMsg(`Verification code generated for ${res.pendingUser.telephone}`);
+        setResendCountdown(30);
+
+        triggerNotification(res.verificationCode);
+        setSuccessMsg('Your verification code is ready in the popup. You can stay on this page.');
       }
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate and display a replacement code in the in-app popup.
+  const handleResend = async () => {
+    if (!pendingUser || resendCountdown > 0) return;
+    setError(null);
+    try {
+      const res = await resendVerificationCode({
+        pendingUser
+      });
+      if (res.success) {
+        setPendingUser(res.pendingUser);
+        setVerificationCode(res.verificationCode);
+        setResendCountdown(30);
+        setEnteredCode('');
+
+        triggerNotification(res.verificationCode);
+        setSuccessMsg('A new verification code is ready in the popup.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to resend code.');
     }
   };
 
@@ -110,15 +182,68 @@ export default function AuthPage({ onLoginSuccess }) {
     }
   };
 
-  // Quick fill verification code for testing convenience
-  const handleAutoFillCode = () => {
-    if (verificationCode) {
-      setEnteredCode(verificationCode);
-    }
-  };
-
   return (
     <div className="auth-page-wrapper">
+      {/* In-app verification notification; no external messaging app is opened. */}
+      {incomingNotification && (
+        <div className="incoming-popup-overlay" role="presentation">
+          <div
+            className="incoming-popup-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="incoming-popup-title"
+          >
+            <div className="incoming-popup-header">
+              <div className="incoming-popup-app">
+                <i className="fa-solid fa-shield-halved"></i>
+                <span>Verification</span>
+                <span className="incoming-popup-time">• Just now</span>
+              </div>
+              <button
+                type="button"
+                className="incoming-popup-close"
+                onClick={() => setIncomingNotification(null)}
+                aria-label="Dismiss verification code popup"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div className="incoming-popup-body">
+              <div className="incoming-popup-sender">
+                <span id="incoming-popup-title">Santa Columbus Apartments MIS</span>
+                <span className="incoming-popup-badge">On this page</span>
+              </div>
+              <p className="incoming-popup-text">
+                Your verification code is <strong className="incoming-popup-otp">{incomingNotification.code}</strong>.
+                Use it below to complete registration. You do not need to open WhatsApp or SMS.
+              </p>
+            </div>
+
+            <div className="incoming-popup-footer">
+              <button
+                type="button"
+                className="incoming-popup-btn btn-autofill"
+                onClick={() => {
+                  setEnteredCode(incomingNotification.code);
+                  setIncomingNotification(null);
+                }}
+              >
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Use this code</span>
+              </button>
+              <button
+                type="button"
+                className="incoming-popup-btn btn-dismiss"
+                onClick={() => setIncomingNotification(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="login">
         {/* Brand Header */}
         <div className="login-brand">
@@ -257,7 +382,7 @@ export default function AuthPage({ onLoginSuccess }) {
                   <i className="fa-solid fa-spinner fa-spin"></i> Processing...
                 </span>
               ) : (
-                'Send Verification Code'
+                'Create Account & Show Code'
               )}
             </button>
 
@@ -274,22 +399,39 @@ export default function AuthPage({ onLoginSuccess }) {
             <h1>Verify Number</h1>
 
             <div className="verification-card">
-              <p style={{ margin: '0 0 6px 0', fontSize: '11.5px', color: '#666' }}>
-                A 6-digit verification code was sent to:
-              </p>
-              <strong style={{ color: '#333', fontSize: '14px' }}>
-                <i className="fa-solid fa-phone" style={{ marginRight: '6px', color: '#4bb3d0' }}></i>
-                {pendingUser.telephone}
-              </strong>
+              <div className="verification-channel-badge">
+                <i className="fa-solid fa-shield-halved"></i>
+                <span>In-app Verification</span>
+              </div>
 
-              <div style={{ marginTop: '10px' }}>
-                <div className="verification-otp-display" title="Click to autofill" onClick={handleAutoFillCode} style={{ cursor: 'pointer' }}>
-                  {verificationCode}
+              <p className="verification-instruction">
+                Verification code for:
+              </p>
+              <div className="verification-phone-display">
+                <i className="fa-solid fa-phone"></i>
+                <span>{formatDisplayPhone(pendingUser.telephone)}</span>
+              </div>
+
+              <div className="verification-popup-info-box">
+                <div className="popup-info-icon">
+                  <i className="fa-solid fa-bell"></i>
                 </div>
-                <div style={{ fontSize: '10.5px', color: '#888' }}>
-                  (Click code above to autofill)
+                <div className="popup-info-content">
+                  <span className="popup-info-title">Code shown in an on-page popup</span>
+                  <span className="popup-info-desc">
+                    Use the popup to fill in the code. No other app or page is needed.
+                  </span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                className="channel-action-btn btn-show-popup"
+                onClick={handleShowPopupAgain}
+              >
+                <i className="fa-solid fa-bell"></i>
+                <span>Show verification code</span>
+              </button>
             </div>
 
             {/* Verification code input */}
@@ -316,6 +458,22 @@ export default function AuthPage({ onLoginSuccess }) {
                 'Verify & Login'
               )}
             </button>
+
+            {/* Resend Options */}
+            <div className="resend-container">
+              {resendCountdown > 0 ? (
+                <span className="resend-timer">
+                  Resend code in <strong>{resendCountdown}s</strong>
+                </span>
+              ) : (
+                <div className="resend-links">
+                  <span>Didn't receive code? </span>
+                  <button type="button" className="resend-code-btn" onClick={handleResend}>
+                    Resend code
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               type="button"

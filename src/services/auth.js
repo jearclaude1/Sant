@@ -80,6 +80,19 @@ export const logoutUser = () => {
   localStorage.removeItem(CURRENT_USER_KEY);
 };
 
+export const formatDisplayPhone = (phone) => {
+  const digits = (phone || '').replace(/[^0-9]/g, '');
+  const intl = digits.startsWith('07') && digits.length === 10
+    ? `250${digits.slice(1)}`
+    : digits.startsWith('7') && digits.length === 9
+      ? `250${digits}`
+      : digits;
+  if (intl.startsWith('250') && intl.length === 12) {
+    return `+250 ${intl.slice(3, 6)} ${intl.slice(6, 9)} ${intl.slice(9)}`;
+  }
+  return phone;
+};
+
 // Generate 6-digit numeric verification code
 export const generateVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -124,6 +137,26 @@ export const initiateRegistration = async ({ username, telephone, password }) =>
     success: true,
     verificationCode,
     pendingUser
+  };
+};
+
+// Generate a replacement code for the in-app verification popup.
+export const resendVerificationCode = async ({ pendingUser }) => {
+  if (!pendingUser) {
+    throw new Error('No pending registration session found.');
+  }
+
+  const newCode = generateVerificationCode();
+  const updatedPending = {
+    ...pendingUser,
+    verificationCode: newCode,
+    initiatedAt: Date.now()
+  };
+
+  return {
+    success: true,
+    verificationCode: newCode,
+    pendingUser: updatedPending
   };
 };
 
