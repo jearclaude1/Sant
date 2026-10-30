@@ -12,19 +12,21 @@ import {
   AlertCircle,
   CheckCircle2,
   Building2,
-  Sparkles
+  Sparkles,
+  Lock,
+  UserCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCurrency, getTodayDateString, generateReceiptNumber } from '../utils/formatters';
 
 export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
-  // First fields: Only name of user inserting data and date of transaction (auto-filled from logged-in user)
+  // First fields: Only name of user inserting data and date of transaction (locked to logged-in user)
   const [userName, setUserName] = useState(currentUser?.username || '');
   const [date, setDate] = useState(getTodayDateString());
   const [receiptNo, setReceiptNo] = useState(generateReceiptNumber());
-  const [notes, setNotes] = useState('');
+  const [customer, setCustomer] = useState('');
 
-  // Auto-fill username when currentUser is loaded
+  // Auto-fill and lock username when currentUser is loaded
   useEffect(() => {
     if (currentUser?.username) {
       setUserName(currentUser.username);
@@ -36,9 +38,9 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
     { id: '1', name: '', quantity: 1, price: '' }
   ]);
 
-  // Transaction Fees
+  // Transaction Fees & Payment Method
   const [fees, setFees] = useState('');
-  const [feesNote, setFeesNote] = useState('');
+  const [feeMethod, setFeeMethod] = useState(''); // '' | 'momo_code' | 'mobile_money'
 
   // Error and Notification states
   const [errors, setErrors] = useState({});
@@ -86,11 +88,49 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
   const parsedFees = parseFloat(fees) || 0;
   const grandTotal = itemsSubtotal + parsedFees;
 
+  // Calculate Mobile money fee based on user criteria:
+  // between 0 - 1000 FRW: transaction fees = 20 FRW
+  // between 1001 - 10000 FRW: transaction fees = 100 FRW
+  // above 10000 FRW: standard tier (250 FRW)
+  const calculateMobileMoneyFee = (amount) => {
+    const num = parseFloat(amount) || 0;
+    if (num <= 0) return 0;
+    if (num <= 1000) return 20;
+    if (num <= 10000) return 100;
+    if (num <= 150000) return 250;
+    if (num <= 500000) return 500;
+    if (num <= 1000000) return 1000;
+    return 1500;
+  };
+
+  const handleFeeMethodChange = (method) => {
+    setFeeMethod(method);
+    if (method === 'mobile_money') {
+      const calculated = calculateMobileMoneyFee(itemsSubtotal);
+      setFees(calculated.toString());
+    } else if (method === 'momo_code') {
+      setFees('0');
+    } else {
+      setFees('');
+    }
+  };
+
+  // Automatically update fees when itemsSubtotal changes while Mobile Money is selected
+  useEffect(() => {
+    if (feeMethod === 'mobile_money') {
+      const calculated = calculateMobileMoneyFee(itemsSubtotal);
+      setFees(calculated.toString());
+    } else if (feeMethod === 'momo_code') {
+      setFees('0');
+    }
+  }, [itemsSubtotal, feeMethod]);
+
   // Form Validation
   const validate = () => {
     const newErrors = {};
 
-    if (!userName.trim()) {
+    const activeUser = (currentUser?.username || userName).trim();
+    if (!activeUser) {
       newErrors.userName = 'Please enter your name (user inserting data)';
     }
 
@@ -124,9 +164,9 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
   const handleReset = () => {
     setDate(getTodayDateString());
     setReceiptNo(generateReceiptNumber());
-    setNotes('');
+    setCustomer('');
     setFees('');
-    setFeesNote('');
+    setFeeMethod('');
     setItems([{ id: Date.now().toString(), name: '', quantity: 1, price: '' }]);
     setErrors({});
     if (currentUser?.username) {
@@ -137,6 +177,7 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
   // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!validate()) {
       window.scrollTo({ top: 100, behavior: 'smooth' });
@@ -156,16 +197,21 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
       };
     });
 
+    const activeUser = (currentUser?.username || userName).trim();
+    const cleanCustomer = customer.trim();
+
     const transactionData = {
       receiptNo,
       date,
-      userName: userName.trim(),
-      recordedBy: userName.trim(), // for backwards-compatibility with views
-      notes: notes.trim(),
+      userName: activeUser,
+      recordedBy: activeUser, // for backwards-compatibility with views
+      notes: cleanCustomer,
+      customer: cleanCustomer,
       items: formattedItems,
       itemsTotal: itemsSubtotal,
+      feeMethod: feeMethod || '',
       fees: parsedFees,
-      feesNote: feesNote.trim(),
+      feesNote: feeMethod === 'mobile_money' ? 'Mobile maney' : feeMethod === 'momo_code' ? 'Momo code' : '',
       totalAmount: grandTotal,
     };
 
@@ -299,33 +345,51 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* ONLY FIELD: Name of user who is going to insert data */}
+            {/* ONLY FIELD: Name of user who is going to insert data (Locked when logged in) */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  {currentUser ? (
+                    <Lock className="w-3.5 h-3.5 text-blue-600" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-blue-600" />
+                  )}
                   <span>Name of User Inserting Data *</span>
                 </span>
-                {currentUser?.username && (
-                  <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
-                    Auto-filled from Login
+                {currentUser?.username ? (
+                  <span className="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full border border-slate-300 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 text-slate-600" />
+                    Locked (Logged In)
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">
+                    Required
                   </span>
                 )}
               </label>
               <input
                 type="text"
-                placeholder="Enter your name (e.g. Sarah Jenkins, David Miller...)"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Enter your name"
+                value={currentUser?.username || userName}
+                onChange={(e) => {
+                  if (!currentUser) setUserName(e.target.value);
+                }}
+                readOnly={!!currentUser}
                 required
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-xs"
+                className={`w-full rounded-xl px-4 py-3 text-sm transition shadow-xs ${
+                  currentUser
+                    ? 'bg-slate-100 text-slate-800 font-bold border border-slate-300 cursor-not-allowed select-none focus:outline-none'
+                    : 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
               {errors.userName && (
                 <p className="text-xs text-rose-600 mt-1 font-medium">{errors.userName}</p>
               )}
               <p className="text-[11px] text-slate-500 mt-1">
-                {currentUser?.telephone ? (
-                  <span>Verified User: <strong>{currentUser.username}</strong> ({currentUser.telephone})</span>
+                {currentUser ? (
+                  <span className="text-slate-600">
+                    Verified User: <strong className="text-slate-900">{currentUser.username}</strong> ({currentUser.telephone || 'Active'}) — Name is locked to logged-in user and cannot be changed.
+                  </span>
                 ) : (
                   <span>Your name will be associated with this transaction voucher.</span>
                 )}
@@ -503,58 +567,99 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
 
         {/* FEES FOR TRANSACTION SECTION */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
-          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-600" />
-            Fees for Transaction
+          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              Fees for Transaction
+            </span>
+            {feeMethod === 'mobile_money' && (
+              <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Auto-calculated fee: {parsedFees} FRW
+              </span>
+            )}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Payment Method Dropdown */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
-                <span>Transaction Fees ($)</span>
-                <span className="text-[11px] text-slate-500">Bank charge, transfer fee, delivery fee, taxes</span>
+                <span>Payment Method</span>
+                <span className="text-[10px] text-emerald-600 font-bold">Auto-Fee</span>
+              </label>
+              <select
+                value={feeMethod}
+                onChange={(e) => handleFeeMethodChange(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-xs transition"
+              >
+                <option value="">Select Method</option>
+                <option value="momo_code">Momo code</option>
+                <option value="mobile_money">Mobile maney</option>
+              </select>
+            </div>
+
+            {/* Transaction Fees (FRW) Field - b: REMAIN */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>Transaction Fees (FRW)</span>
+                {feeMethod === 'mobile_money' && (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                    Auto-Filled
+                  </span>
+                )}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  $
-                </div>
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="0.00"
+                  step="any"
+                  placeholder="0"
                   value={fees}
                   onChange={(e) => setFees(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-xs transition"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 pr-14 text-sm font-bold text-amber-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs transition"
                 />
+                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-500 pointer-events-none">
+                  FRW
+                </span>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Fee Description / Reason (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Bank wire charge, Courier delivery, Carrier fee"
-                value={feesNote}
-                onChange={(e) => setFeesNote(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-xs transition"
-              />
             </div>
           </div>
 
-          {/* Optional Notes */}
+          {/* c: Auto-calculation explanation banner with range: 0 - 1000 -> 20, 101 - 10000 -> 100 */}
+          <div className="mt-3.5 p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-slate-600">
+                {feeMethod === 'mobile_money' ? (
+                  itemsSubtotal <= 1000
+                    ? `Money used: ${formatCurrency(itemsSubtotal)} (range 0 - 1,000 FRW) → Transaction fee auto-set to 20 FRW`
+                    : itemsSubtotal <= 10000
+                    ? `Money used: ${formatCurrency(itemsSubtotal)} (range 101 - 10,000 FRW) → Transaction fee auto-set to 100 FRW`
+                    : `Money used: ${formatCurrency(itemsSubtotal)} (> 10,000 FRW) → Transaction fee auto-set to 250 FRW`
+                ) : feeMethod === 'momo_code' ? (
+                  'Momo code selected → Transaction fee: 0 FRW'
+                ) : (
+                  'Select "Mobile maney" to auto-calculate fee (0 - 1,000 FRW → 20 FRW, 101 - 10,000 FRW → 100 FRW)'
+                )}
+              </span>
+            </div>
+            {feeMethod === 'mobile_money' && (
+              <span className="shrink-0 font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                Fee: {parsedFees} FRW
+              </span>
+            )}
+          </div>
+
+          {/* d: Title changed from Remarks to Customer */}
           <div className="mt-4">
             <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>Transaction Notes / Remarks (Optional)</span>
+              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Customer</span>
             </label>
             <textarea
               rows="2"
-              placeholder="Any additional remarks regarding this expenditure, apartment unit #, purpose..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Enter customer name, contact, apartment unit # or remarks..."
+              value={customer}
+              onChange={(e) => setCustomer(e.target.value)}
               className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
             ></textarea>
           </div>

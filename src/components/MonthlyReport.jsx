@@ -12,13 +12,14 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { formatCurrency, formatDate, getCurrentMonthString } from '../utils/formatters';
+import { deduplicateTransactions } from '../services/storage';
 
 export default function MonthlyReport({ transactions = [], onViewReceipt }) {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthString()); // 'YYYY-MM'
 
-  // Filter transactions belonging to selected 'YYYY-MM'
+  // Filter transactions belonging to selected 'YYYY-MM' (deduplicated)
   const monthlyTransactions = useMemo(() => {
-    return transactions.filter((tx) => tx.date && tx.date.startsWith(selectedMonth));
+    return deduplicateTransactions(transactions).filter((tx) => tx.date && tx.date.startsWith(selectedMonth));
   }, [transactions, selectedMonth]);
 
   // Aggregate monthly stats

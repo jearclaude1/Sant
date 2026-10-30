@@ -13,7 +13,8 @@ import {
 } from './services/auth';
 import {
   getLocalTransactions,
-  saveLocalTransactions
+  saveLocalTransactions,
+  deduplicateTransactions
 } from './services/storage';
 import {
   initFirebase,
@@ -97,8 +98,9 @@ export default function App() {
         (remoteTransactions) => {
           setFirebaseStatus('connected');
           if (remoteTransactions && remoteTransactions.length > 0) {
-            setTransactions(remoteTransactions);
-            saveLocalTransactions(remoteTransactions);
+            const clean = deduplicateTransactions(remoteTransactions);
+            setTransactions(clean);
+            saveLocalTransactions(clean);
           }
         },
         (err) => {
@@ -126,7 +128,11 @@ export default function App() {
       };
 
       setTransactions((prev) => {
-        const updated = [fullRecord, ...prev];
+        // Prevent duplication if the record is already received via Firebase listener
+        const withoutDuplicate = prev.filter(
+          (t) => !(t.id && t.id === savedId) && !(t.receiptNo && t.receiptNo === newTxData.receiptNo)
+        );
+        const updated = deduplicateTransactions([fullRecord, ...withoutDuplicate]);
         saveLocalTransactions(updated);
         return updated;
       });
@@ -137,7 +143,7 @@ export default function App() {
   };
 
   // Delete transaction
-  const handleDeleteTransaction = async (id) => {
+  const handleDeleteTransaction = async (id, receiptNo) => {
     if (firebaseStatus === 'connected') {
       try {
         await deleteTransactionFromRealtimeDatabase(id);
@@ -147,7 +153,7 @@ export default function App() {
     }
 
     setTransactions((prev) => {
-      const updated = prev.filter((tx) => tx.id !== id);
+      const updated = prev.filter((tx) => tx.id !== id && (!receiptNo || tx.receiptNo !== receiptNo));
       saveLocalTransactions(updated);
       return updated;
     });

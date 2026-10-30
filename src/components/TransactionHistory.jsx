@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES } from '../utils/sampleData';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { exportTransactionsToCSV } from '../services/storage';
+import { exportTransactionsToCSV, deduplicateTransactions } from '../services/storage';
 
 export default function TransactionHistory({
   transactions = [],
@@ -32,7 +32,7 @@ export default function TransactionHistory({
 
   // Filtered & Sorted list
   const filteredTransactions = useMemo(() => {
-    return transactions
+    return deduplicateTransactions(transactions)
       .filter((tx) => {
         // Search filter
         if (searchTerm.trim()) {
@@ -40,7 +40,7 @@ export default function TransactionHistory({
           const matchesUser = (tx.userName || tx.recordedBy || '').toLowerCase().includes(query);
           const matchesVendor = (tx.vendor || '').toLowerCase().includes(query);
           const matchesReceipt = (tx.receiptNo || '').toLowerCase().includes(query);
-          const matchesNotes = (tx.notes || '').toLowerCase().includes(query);
+          const matchesNotes = (tx.customer || tx.notes || '').toLowerCase().includes(query);
           const matchesItem = Array.isArray(tx.items) && tx.items.some((item) =>
             (item.name || '').toLowerCase().includes(query)
           );
@@ -81,7 +81,7 @@ export default function TransactionHistory({
   const confirmDelete = async () => {
     if (!deleteCandidate) return;
     try {
-      await onDeleteTransaction(deleteCandidate.id);
+      await onDeleteTransaction(deleteCandidate.id, deleteCandidate.receiptNo);
       setDeleteCandidate(null);
     } catch (err) {
       alert('Failed to delete transaction: ' + err.message);
@@ -338,6 +338,15 @@ export default function TransactionHistory({
                                       +{formatCurrency(tx.fees)}
                                     </td>
                                   </tr>
+                                  {/* Customer info */}
+                                  {(tx.customer || tx.notes) && (
+                                    <tr className="bg-slate-50/70 border-t border-slate-200">
+                                      <td colSpan="5" className="py-2 px-1 text-slate-700">
+                                        <span className="font-semibold text-slate-900">Customer: </span>
+                                        {tx.customer || tx.notes}
+                                      </td>
+                                    </tr>
+                                  )}
                                   {/* Grand total */}
                                   <tr className="bg-slate-50">
                                     <td colSpan="4" className="py-2 text-right font-bold text-slate-900">

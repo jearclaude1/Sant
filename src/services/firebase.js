@@ -164,8 +164,19 @@ export const subscribeToTransactions = (onSuccess, onError) => {
       ref(db, COLLECTION_NAME),
       (snapshot) => {
         const values = snapshot.val() || {};
-        const transactions = Object.entries(values)
-          .map(([id, transaction]) => ({ id, ...transaction }))
+        // Deduplicate records from Firebase by voucher number (receiptNo) or id
+        const uniqueMap = new Map();
+        Object.entries(values).forEach(([id, transaction]) => {
+          const item = { id, ...transaction };
+          const key = (item.receiptNo || id || '').trim();
+          if (key && !uniqueMap.has(key)) {
+            uniqueMap.set(key, item);
+          } else if (!key) {
+            uniqueMap.set(id, item);
+          }
+        });
+
+        const transactions = Array.from(uniqueMap.values())
           .sort((left, right) => new Date(right.date || 0).getTime() - new Date(left.date || 0).getTime());
         onSuccess(transactions);
       },
@@ -185,7 +196,18 @@ export const subscribeToTransactions = (onSuccess, onError) => {
  */
 export const uploadBulkToRealtimeDatabase = async (records) => {
   let count = 0;
-  for (const record of records) {
+  // Deduplicate before uploading
+  const seen = new Set();
+  const uniqueRecords = (records || []).filter((r) => {
+    const key = (r.receiptNo || r.id || '').trim();
+    if (key) {
+      if (seen.has(key)) return false;
+      seen.add(key);
+    }
+    return true;
+  });
+
+  for (const record of uniqueRecords) {
     const { id, ...dataToUpload } = record;
     const restUrl = `${firebaseConfig.databaseURL}/${COLLECTION_NAME}.json`;
     const res = await fetch(restUrl, {

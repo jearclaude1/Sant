@@ -15,6 +15,7 @@ import {
   Building2
 } from 'lucide-react';
 import { formatCurrency, formatDate, getTodayDateString } from '../utils/formatters';
+import { deduplicateTransactions } from '../services/storage';
 
 export default function DailyReport({ transactions = [], onViewReceipt }) {
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
@@ -29,9 +30,9 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
     setSelectedDate(`${yr}-${mo}-${da}`);
   };
 
-  // Filter transactions for the selected day
+  // Filter transactions for the selected day (deduplicated)
   const dailyTransactions = useMemo(() => {
-    return transactions.filter((tx) => tx.date === selectedDate);
+    return deduplicateTransactions(transactions).filter((tx) => tx.date === selectedDate);
   }, [transactions, selectedDate]);
 
   // Aggregate Metrics

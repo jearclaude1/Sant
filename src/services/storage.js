@@ -2,28 +2,57 @@ import { sampleTransactions } from '../utils/sampleData';
 
 const LOCAL_STORAGE_KEY = 'sant_mis_transactions_cache';
 
-// Load locally cached transactions
+// Helper to strictly deduplicate transactions by voucher number (receiptNo) or id
+export const deduplicateTransactions = (list) => {
+  if (!Array.isArray(list)) return [];
+  const seenKeys = new Set();
+  const deduped = [];
+
+  for (const item of list) {
+    if (!item) continue;
+    // Primary key is receiptNo (e.g. SCA-2026-5872) or fallback to database id
+    const key = (item.receiptNo || item.id || '').trim();
+    if (key) {
+      if (seenKeys.has(key)) {
+        continue; // Skip duplicate
+      }
+      seenKeys.add(key);
+    }
+    deduped.push(item);
+  }
+
+  return deduped;
+};
+
+// Load locally cached transactions (with automatic deduplication)
 export const getLocalTransactions = () => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const clean = deduplicateTransactions(parsed);
+        // If duplicates existed in localStorage, clean it up immediately
+        if (clean.length !== parsed.length) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(clean));
+        }
+        return clean;
       }
     }
   } catch (err) {
     console.error('Error reading localStorage transactions', err);
   }
   // Default to sample data if empty
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sampleTransactions));
-  return sampleTransactions;
+  const defaultClean = deduplicateTransactions(sampleTransactions);
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaultClean));
+  return defaultClean;
 };
 
-// Save locally
+// Save locally with deduplication
 export const saveLocalTransactions = (transactions) => {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
+    const clean = deduplicateTransactions(transactions);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(clean));
   } catch (err) {
     console.error('Error saving to localStorage', err);
   }

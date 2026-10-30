@@ -125,7 +125,7 @@ export default function ReceiptModal({ transaction, onClose }) {
 
                 <tr className="bg-amber-50/50 font-medium">
                   <td colSpan="4" className="py-2 px-4 text-right text-amber-800">
-                    Transaction Fees ({transaction.feesNote || 'Handling / processing'}):
+                    Transaction Fees ({transaction.feesNote || (transaction.feeMethod === 'mobile_money' ? 'Mobile maney' : transaction.feeMethod === 'momo_code' ? 'Momo code' : 'Processing fee')}):
                   </td>
                   <td className="py-2 px-4 text-right font-bold text-amber-700">
                     +{formatCurrency(transaction.fees)}
@@ -144,11 +144,11 @@ export default function ReceiptModal({ transaction, onClose }) {
             </table>
           </div>
 
-          {/* Notes */}
-          {transaction.notes && (
+          {/* Customer */}
+          {(transaction.customer || transaction.notes) && (
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
-              <span className="font-semibold text-slate-800">Notes / Remarks: </span>
-              {transaction.notes}
+              <span className="font-semibold text-slate-800">Customer: </span>
+              {transaction.customer || transaction.notes}
             </div>
           )}
 
