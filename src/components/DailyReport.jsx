@@ -14,7 +14,14 @@ import {
   CheckCircle2,
   Building2
 } from 'lucide-react';
-import { formatCurrency, formatDate, getTodayDateString } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatDate,
+  formatTransactionTime,
+  getTodayDateString,
+  getPaymentMethodLabel,
+  getTransactionPaymentMethods
+} from '../utils/formatters';
 import { deduplicateTransactions } from '../services/storage';
 
 export default function DailyReport({ transactions = [], onViewReceipt }) {
@@ -63,7 +70,8 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
             userName: tx.userName || tx.recordedBy || 'Staff',
             vendor: tx.vendor,
             category: tx.category,
-            paymentMethod: tx.paymentMethod,
+            paymentMethod: item.paymentMethod,
+            transactionFee: item.transactionFee,
           });
         });
       }
@@ -205,7 +213,7 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
           <span className="text-slate-500 text-xs font-semibold block mb-1">Transaction Fees</span>
           <p className="text-xl font-bold text-amber-600">{formatCurrency(metrics.totalFees)}</p>
-          <span className="text-[11px] text-slate-500">Wire, bank & handling</span>
+          <span className="text-[11px] text-slate-500">Momo transaction fees</span>
         </div>
 
         {/* Transactions count */}
@@ -292,7 +300,8 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
                     <th className="pb-2.5">Recorded By</th>
                     <th className="pb-2.5 text-center">Qty</th>
                     <th className="pb-2.5 text-right">Unit Price</th>
-                    <th className="pb-2.5 text-right">Subtotal</th>
+                    <th className="pb-2.5">Payment Method</th>
+                    <th className="pb-2.5 text-right">Transaction Fees</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -305,8 +314,11 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
                       <td className="py-2.5 text-slate-600">{item.userName}</td>
                       <td className="py-2.5 text-center font-bold text-blue-600">{item.quantity}</td>
                       <td className="py-2.5 text-right text-slate-600">{formatCurrency(item.price)}</td>
-                      <td className="py-2.5 text-right font-bold text-emerald-600">
-                        {formatCurrency(item.subtotal)}
+                      <td className="py-2.5 text-slate-700">
+                        {getPaymentMethodLabel(item.paymentMethod) || '—'}
+                      </td>
+                      <td className="py-2.5 text-right font-bold text-amber-600">
+                        {formatCurrency(item.transactionFee)}
                       </td>
                     </tr>
                   ))}
@@ -334,10 +346,12 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="pb-3">Voucher #</th>
+                  <th className="pb-3">Transaction Made</th>
                   <th className="pb-3">Entered By (User)</th>
                   <th className="pb-3">Items Summary</th>
                   <th className="pb-3 text-center">Items Qty</th>
                   <th className="pb-3 text-right">Items Subtotal</th>
+                  <th className="pb-3">Payment Methods</th>
                   <th className="pb-3 text-right">Fees</th>
                   <th className="pb-3 text-right">Grand Total</th>
                   <th className="pb-3 text-center no-print">Receipt</th>
@@ -347,6 +361,9 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
                 {dailyTransactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 font-mono font-bold text-amber-700">{tx.receiptNo}</td>
+                    <td className="py-3 text-slate-600 whitespace-nowrap">
+                      {formatTransactionTime(tx.transactionMadeAt) || '—'}
+                    </td>
                     <td className="py-3 text-slate-900 font-medium">
                       <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
                         {tx.userName || tx.recordedBy || 'MIS User'}
@@ -362,6 +379,9 @@ export default function DailyReport({ transactions = [], onViewReceipt }) {
                     </td>
                     <td className="py-3 text-right text-slate-700 font-medium">
                       {formatCurrency(tx.itemsTotal)}
+                    </td>
+                    <td className="py-3 text-slate-700">
+                      {getTransactionPaymentMethods(tx).join(', ') || '—'}
                     </td>
                     <td className="py-3 text-right text-amber-600 font-medium">
                       {formatCurrency(tx.fees)}

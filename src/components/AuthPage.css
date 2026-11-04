@@ -92,7 +92,6 @@
   font-weight: 700;
 }
 
-/* Neumorphic Inset Input */
 .input {
   width: 100%;
   box-sizing: border-box;
@@ -138,7 +137,6 @@
   color: #94a3b8;
 }
 
-/* Neumorphic Button */
 .login button.auth-btn {
   width: 100%;
   box-sizing: border-box;
@@ -182,7 +180,6 @@
   box-sizing: border-box;
   height: 42px;
   margin: 6px 0;
-  border: 0;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   background: #fff;

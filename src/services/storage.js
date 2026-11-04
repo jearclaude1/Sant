@@ -1,4 +1,5 @@
 import { sampleTransactions } from '../utils/sampleData';
+import { getPaymentMethodLabel, formatTransactionTime } from '../utils/formatters';
 
 const LOCAL_STORAGE_KEY = 'sant_mis_transactions_cache';
 
@@ -65,11 +66,14 @@ export const exportTransactionsToCSV = (transactions) => {
   const headers = [
     'Voucher No',
     'Date',
+    'Transaction Made',
     'Entered By (User)',
     'Item Name',
     'Quantity',
     'Unit Price',
     'Item Subtotal',
+    'Payment Method',
+    'Item Transaction Fee',
     'Transaction Fees',
     'Total Transaction Amount',
     'Notes'
@@ -84,11 +88,14 @@ export const exportTransactionsToCSV = (transactions) => {
         rows.push([
           `"${tx.receiptNo || ''}"`,
           `"${tx.date || ''}"`,
+          `"${formatTransactionTime(tx.transactionMadeAt)}"`,
           `"${user.replace(/"/g, '""')}"`,
           `"${(item.name || '').replace(/"/g, '""')}"`,
           item.quantity || 1,
           item.price || 0,
           item.subtotal || 0,
+          `"${getPaymentMethodLabel(item.paymentMethod || tx.feeMethod)}"`,
+          item.transactionFee ?? (index === 0 ? (tx.fees || 0) : 0),
           index === 0 ? (tx.fees || 0) : 0, // only on first row of multi-item tx
           index === 0 ? (tx.totalAmount || 0) : '',
           `"${(tx.notes || '').replace(/"/g, '""')}"`
@@ -98,11 +105,14 @@ export const exportTransactionsToCSV = (transactions) => {
       rows.push([
         `"${tx.receiptNo || ''}"`,
         `"${tx.date || ''}"`,
+        `"${formatTransactionTime(tx.transactionMadeAt)}"`,
         `"${user.replace(/"/g, '""')}"`,
         '"N/A"',
         0,
         0,
         0,
+        `"${getPaymentMethodLabel(tx.feeMethod)}"`,
+        tx.fees || 0,
         tx.fees || 0,
         tx.totalAmount || 0,
         `"${(tx.notes || '').replace(/"/g, '""')}"`

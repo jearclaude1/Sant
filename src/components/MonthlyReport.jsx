@@ -11,7 +11,13 @@ import {
   Eye,
   FileSpreadsheet
 } from 'lucide-react';
-import { formatCurrency, formatDate, getCurrentMonthString } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatDate,
+  formatTransactionTime,
+  getCurrentMonthString,
+  getTransactionPaymentMethods
+} from '../utils/formatters';
 import { deduplicateTransactions } from '../services/storage';
 
 export default function MonthlyReport({ transactions = [], onViewReceipt }) {
@@ -210,7 +216,7 @@ export default function MonthlyReport({ transactions = [], onViewReceipt }) {
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
           <span className="text-slate-500 text-xs font-semibold block mb-1">Total Fees Paid</span>
           <p className="text-xl font-bold text-amber-600">{formatCurrency(stats.totalFees)}</p>
-          <span className="text-[11px] text-slate-500">Bank & transfer fees</span>
+          <span className="text-[11px] text-slate-500">Momo transaction fees</span>
         </div>
 
         {/* Peak Day */}
@@ -401,10 +407,12 @@ export default function MonthlyReport({ transactions = [], onViewReceipt }) {
                 <tr className="border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="pb-3">Voucher #</th>
                   <th className="pb-3">Date</th>
+                  <th className="pb-3">Transaction Made</th>
                   <th className="pb-3">Entered By (User)</th>
                   <th className="pb-3">Items Summary</th>
                   <th className="pb-3 text-center">Items Qty</th>
                   <th className="pb-3 text-right">Items Subtotal</th>
+                  <th className="pb-3">Payment Methods</th>
                   <th className="pb-3 text-right">Fees</th>
                   <th className="pb-3 text-right">Grand Total</th>
                   <th className="pb-3 text-center no-print">Action</th>
@@ -415,6 +423,9 @@ export default function MonthlyReport({ transactions = [], onViewReceipt }) {
                   <tr key={tx.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 font-mono font-bold text-amber-700">{tx.receiptNo}</td>
                     <td className="py-3 text-slate-600">{formatDate(tx.date)}</td>
+                    <td className="py-3 text-slate-600 whitespace-nowrap">
+                      {formatTransactionTime(tx.transactionMadeAt) || '—'}
+                    </td>
                     <td className="py-3 text-slate-900 font-medium">
                       <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
                         {tx.userName || tx.recordedBy || 'MIS User'}
@@ -430,6 +441,9 @@ export default function MonthlyReport({ transactions = [], onViewReceipt }) {
                     </td>
                     <td className="py-3 text-right text-slate-700 font-medium">
                       {formatCurrency(tx.itemsTotal)}
+                    </td>
+                    <td className="py-3 text-slate-700">
+                      {getTransactionPaymentMethods(tx).join(', ') || '—'}
                     </td>
                     <td className="py-3 text-right text-amber-600 font-medium">
                       {formatCurrency(tx.fees)}

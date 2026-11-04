@@ -1,6 +1,12 @@
 import React from 'react';
 import { X, Printer, Building2, CheckCircle, Calendar, CreditCard, User, Tag } from 'lucide-react';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatDate,
+  formatTransactionTime,
+  getPaymentMethodLabel,
+  getTransactionPaymentMethods
+} from '../utils/formatters';
 
 export default function ReceiptModal({ transaction, onClose }) {
   if (!transaction) return null;
@@ -73,6 +79,12 @@ export default function ReceiptModal({ transaction, onClose }) {
               <span className="font-bold text-slate-900">{formatDate(transaction.date)}</span>
             </div>
             <div>
+              <span className="text-slate-500 block mb-0.5">Transaction Made:</span>
+              <span className="font-bold text-slate-900">
+                {formatTransactionTime(transaction.transactionMadeAt) || '—'}
+              </span>
+            </div>
+            <div>
               <span className="text-slate-500 block mb-0.5">Entered By (User):</span>
               <span className="font-bold text-blue-700">{userName}</span>
             </div>
@@ -93,7 +105,8 @@ export default function ReceiptModal({ transaction, onClose }) {
                   <th className="py-2.5 px-4">Item Description</th>
                   <th className="py-2.5 px-4 text-center">Qty</th>
                   <th className="py-2.5 px-4 text-right">Unit Price</th>
-                  <th className="py-2.5 px-4 text-right">Subtotal</th>
+                  <th className="py-2.5 px-4">Payment Method</th>
+                  <th className="py-2.5 px-4 text-right">Transaction Fees</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -107,15 +120,18 @@ export default function ReceiptModal({ transaction, onClose }) {
                     <td className="py-2 px-4 text-right text-slate-600">
                       {formatCurrency(item.price)}
                     </td>
-                    <td className="py-2 px-4 text-right font-bold text-emerald-600">
-                      {formatCurrency(item.subtotal)}
+                    <td className="py-2 px-4 text-slate-700">
+                      {getPaymentMethodLabel(item.paymentMethod) || '—'}
+                    </td>
+                    <td className="py-2 px-4 text-right font-bold text-amber-700">
+                      {formatCurrency(item.transactionFee)}
                     </td>
                   </tr>
                 ))}
 
                 {/* Subtotals & Fees */}
                 <tr className="bg-slate-50/80 border-t border-slate-200 font-medium">
-                  <td colSpan="4" className="py-2 px-4 text-right text-slate-600">
+                  <td colSpan="5" className="py-2 px-4 text-right text-slate-600">
                     Items Subtotal:
                   </td>
                   <td className="py-2 px-4 text-right font-bold text-slate-900">
@@ -124,8 +140,8 @@ export default function ReceiptModal({ transaction, onClose }) {
                 </tr>
 
                 <tr className="bg-amber-50/50 font-medium">
-                  <td colSpan="4" className="py-2 px-4 text-right text-amber-800">
-                    Transaction Fees ({transaction.feesNote || (transaction.feeMethod === 'mobile_money' ? 'Mobile maney' : transaction.feeMethod === 'momo_code' ? 'Momo code' : 'Processing fee')}):
+                  <td colSpan="5" className="py-2 px-4 text-right text-amber-800">
+                    Transaction Fees ({transaction.feesNote || getTransactionPaymentMethods(transaction).join(', ') || 'Processing fee'}):
                   </td>
                   <td className="py-2 px-4 text-right font-bold text-amber-700">
                     +{formatCurrency(transaction.fees)}
@@ -133,7 +149,7 @@ export default function ReceiptModal({ transaction, onClose }) {
                 </tr>
 
                 <tr className="bg-emerald-50/80 font-bold border-t-2 border-emerald-200">
-                  <td colSpan="4" className="py-3 px-4 text-right text-emerald-900 text-sm">
+                  <td colSpan="5" className="py-3 px-4 text-right text-emerald-900 text-sm">
                     Total Amount Spent:
                   </td>
                   <td className="py-3 px-4 text-right font-black text-emerald-700 text-base">

@@ -12,12 +12,16 @@ import {
   AlertCircle,
   CheckCircle2,
   Building2,
-  Sparkles,
   Lock,
   UserCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { formatCurrency, getTodayDateString, generateReceiptNumber } from '../utils/formatters';
+import {
+  formatCurrency,
+  getPaymentMethodLabel,
+  getTodayDateString,
+  generateReceiptNumber
+} from '../utils/formatters';
 
 export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
   // First fields: Only name of user inserting data and date of transaction (locked to logged-in user)
@@ -35,12 +39,8 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
 
   // Items State (Dynamic array with multi-row support via plus button)
   const [items, setItems] = useState([
-    { id: '1', name: '', quantity: 1, price: '' }
+    { id: '1', name: '', quantity: 1, price: '', paymentMethod: '' }
   ]);
-
-  // Transaction Fees & Payment Method
-  const [fees, setFees] = useState('');
-  const [feeMethod, setFeeMethod] = useState(''); // '' | 'momo_code' | 'mobile_money'
 
   // Error and Notification states
   const [errors, setErrors] = useState({});
@@ -52,7 +52,8 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
       name: '',
       quantity: 1,
-      price: ''
+      price: '',
+      paymentMethod: ''
     };
     setItems((prev) => [...prev, newItem]);
   };
@@ -85,13 +86,8 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
   };
 
   const itemsSubtotal = calculateItemsSubtotal();
-  const parsedFees = parseFloat(fees) || 0;
-  const grandTotal = itemsSubtotal + parsedFees;
 
-  // Calculate Mobile money fee based on user criteria:
-  // between 0 - 1000 FRW: transaction fees = 20 FRW
-  // between 1001 - 10000 FRW: transaction fees = 100 FRW
-  // above 10000 FRW: standard tier (250 FRW)
+  // Calculate Momo fees using the existing transaction fee tiers.
   const calculateMobileMoneyFee = (amount) => {
     const num = parseFloat(amount) || 0;
     if (num <= 0) return 0;
@@ -103,27 +99,14 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
     return 1500;
   };
 
-  const handleFeeMethodChange = (method) => {
-    setFeeMethod(method);
-    if (method === 'mobile_money') {
-      const calculated = calculateMobileMoneyFee(itemsSubtotal);
-      setFees(calculated.toString());
-    } else if (method === 'momo_code') {
-      setFees('0');
-    } else {
-      setFees('');
-    }
+  const getItemTransactionFee = (item) => {
+    const itemAmount = (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
+    return item.paymentMethod === 'momo' ? calculateMobileMoneyFee(itemAmount) : 0;
   };
 
-  // Automatically update fees when itemsSubtotal changes while Mobile Money is selected
-  useEffect(() => {
-    if (feeMethod === 'mobile_money') {
-      const calculated = calculateMobileMoneyFee(itemsSubtotal);
-      setFees(calculated.toString());
-    } else if (feeMethod === 'momo_code') {
-      setFees('0');
-    }
-  }, [itemsSubtotal, feeMethod]);
+  const parsedFees = items.reduce((total, item) => total + getItemTransactionFee(item), 0);
+  const grandTotal = itemsSubtotal + parsedFees;
+  const paymentMethods = [...new Set(items.map((item) => item.paymentMethod).filter(Boolean))];
 
   // Form Validation
   const validate = () => {
@@ -150,6 +133,9 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
       if (!item.quantity || parseFloat(item.quantity) <= 0) {
         itemErrors.push(`Item #${index + 1}: Quantity must be at least 1`);
       }
+      if (!item.paymentMethod) {
+        itemErrors.push(`Item #${index + 1}: Payment method is required`);
+      }
     });
 
     if (itemErrors.length > 0) {
@@ -165,9 +151,7 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
     setDate(getTodayDateString());
     setReceiptNo(generateReceiptNumber());
     setCustomer('');
-    setFees('');
-    setFeeMethod('');
-    setItems([{ id: Date.now().toString(), name: '', quantity: 1, price: '' }]);
+    setItems([{ id: Date.now().toString(), name: '', quantity: 1, price: '', paymentMethod: '' }]);
     setErrors({});
     if (currentUser?.username) {
       setUserName(currentUser.username);
@@ -194,24 +178,28 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
         quantity: qty,
         price: unitPrice,
         subtotal: qty * unitPrice,
+        paymentMethod: item.paymentMethod,
+        transactionFee: getItemTransactionFee(item),
       };
     });
 
     const activeUser = (currentUser?.username || userName).trim();
     const cleanCustomer = customer.trim();
 
+    const transactionMadeAt = new Date().toISOString();
     const transactionData = {
       receiptNo,
       date,
+      transactionMadeAt,
       userName: activeUser,
       recordedBy: activeUser, // for backwards-compatibility with views
       notes: cleanCustomer,
       customer: cleanCustomer,
       items: formattedItems,
       itemsTotal: itemsSubtotal,
-      feeMethod: feeMethod || '',
+      paymentMethods,
       fees: parsedFees,
-      feesNote: feeMethod === 'mobile_money' ? 'Mobile maney' : feeMethod === 'momo_code' ? 'Momo code' : '',
+      feesNote: paymentMethods.map((method) => method === 'momo' ? 'Momo' : 'Code').join(', '),
       totalAmount: grandTotal,
     };
 
@@ -440,8 +428,6 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
           {/* Items Input Rows */}
           <div className="space-y-3">
             {items.map((item, index) => {
-              const itemSubtotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
-
               return (
                 <div
                   key={item.id}
@@ -466,7 +452,7 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
                     </div>
 
                     {/* Item Name / Description */}
-                    <div className="col-span-12 sm:col-span-5">
+                    <div className="col-span-12 sm:col-span-3">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Item Description / Name *
                       </label>
@@ -480,7 +466,7 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
                     </div>
 
                     {/* Quantity */}
-                    <div className="col-span-6 sm:col-span-2">
+                    <div className="col-span-6 sm:col-span-1">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Quantity *
                       </label>
@@ -511,13 +497,29 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
                       />
                     </div>
 
-                    {/* Line Subtotal */}
-                    <div className="col-span-10 sm:col-span-1">
+                    {/* Payment Method */}
+                    <div className="col-span-6 sm:col-span-2">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Subtotal
+                        Payment Method *
                       </label>
-                      <div className="py-2 px-1 text-sm font-bold text-emerald-600 truncate">
-                        {formatCurrency(itemSubtotal)}
+                      <select
+                        value={item.paymentMethod}
+                        onChange={(e) => handleItemChange(item.id, 'paymentMethod', e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                      >
+                        <option value="">Select</option>
+                        <option value="momo">Momo</option>
+                        <option value="code">Code</option>
+                      </select>
+                    </div>
+
+                    {/* Line Transaction Fee */}
+                    <div className="col-span-10 sm:col-span-2">
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        Transaction Fees
+                      </label>
+                      <div className="py-2 px-1 text-sm font-bold text-amber-600 truncate">
+                        {formatCurrency(getItemTransactionFee(item))}
                       </div>
                     </div>
 
@@ -567,86 +569,30 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
 
         {/* FEES FOR TRANSACTION SECTION */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
-          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              Fees for Transaction
-            </span>
-            {feeMethod === 'mobile_money' && (
-              <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Auto-calculated fee: {parsedFees} FRW
-              </span>
-            )}
+          <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+            Fees for Transaction
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Payment Method Dropdown */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
-                <span>Payment Method</span>
-                <span className="text-[10px] text-emerald-600 font-bold">Auto-Fee</span>
-              </label>
-              <select
-                value={feeMethod}
-                onChange={(e) => handleFeeMethodChange(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-xs transition"
-              >
-                <option value="">Select Method</option>
-                <option value="momo_code">Momo code</option>
-                <option value="mobile_money">Mobile maney</option>
-              </select>
-            </div>
-
-            {/* Transaction Fees (FRW) Field - b: REMAIN */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
-                <span>Transaction Fees (FRW)</span>
-                {feeMethod === 'mobile_money' && (
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                    Auto-Filled
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <p className="text-xs font-semibold text-slate-600 mb-2">Payment methods used</p>
+              <div className="flex flex-wrap gap-2">
+                {paymentMethods.length > 0 ? paymentMethods.map((method) => (
+                  <span key={method} className="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full border border-blue-200">
+                    {getPaymentMethodLabel(method)}
                   </span>
+                )) : (
+                  <span className="text-xs text-slate-500">Choose a method for each item above.</span>
                 )}
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="0"
-                  value={fees}
-                  onChange={(e) => setFees(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 pr-14 text-sm font-bold text-amber-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs transition"
-                />
-                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-500 pointer-events-none">
-                  FRW
-                </span>
               </div>
             </div>
-          </div>
-
-          {/* c: Auto-calculation explanation banner with range: 0 - 1000 -> 20, 101 - 10000 -> 100 */}
-          <div className="mt-3.5 p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="text-slate-600">
-                {feeMethod === 'mobile_money' ? (
-                  itemsSubtotal <= 1000
-                    ? `Money used: ${formatCurrency(itemsSubtotal)} (range 0 - 1,000 FRW) → Transaction fee auto-set to 20 FRW`
-                    : itemsSubtotal <= 10000
-                    ? `Money used: ${formatCurrency(itemsSubtotal)} (range 101 - 10,000 FRW) → Transaction fee auto-set to 100 FRW`
-                    : `Money used: ${formatCurrency(itemsSubtotal)} (> 10,000 FRW) → Transaction fee auto-set to 250 FRW`
-                ) : feeMethod === 'momo_code' ? (
-                  'Momo code selected → Transaction fee: 0 FRW'
-                ) : (
-                  'Select "Mobile maney" to auto-calculate fee (0 - 1,000 FRW → 20 FRW, 101 - 10,000 FRW → 100 FRW)'
-                )}
-              </span>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-xs font-semibold text-amber-800 mb-1">Total transaction fees</p>
+              <p className="text-lg font-bold text-amber-700">
+                {parsedFees > 0 ? formatCurrency(parsedFees) : 'No transaction fees'}
+              </p>
             </div>
-            {feeMethod === 'mobile_money' && (
-              <span className="shrink-0 font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
-                Fee: {parsedFees} FRW
-              </span>
-            )}
           </div>
 
           {/* d: Title changed from Remarks to Customer */}

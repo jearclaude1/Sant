@@ -14,7 +14,13 @@ import {
   Layers
 } from 'lucide-react';
 import { CATEGORIES } from '../utils/sampleData';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import {
+  formatCurrency,
+  formatDate,
+  formatTransactionTime,
+  getPaymentMethodLabel,
+  getTransactionPaymentMethods
+} from '../utils/formatters';
 import { exportTransactionsToCSV, deduplicateTransactions } from '../services/storage';
 
 export default function TransactionHistory({
@@ -202,9 +208,11 @@ export default function TransactionHistory({
                 <tr>
                   <th className="py-3 px-4">Voucher #</th>
                   <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Transaction Made</th>
                   <th className="py-3 px-4">Entered By (User)</th>
                   <th className="py-3 px-4">Items Summary</th>
                   <th className="py-3 px-4 text-center">Items</th>
+                  <th className="py-3 px-4">Payment Methods</th>
                   <th className="py-3 px-4 text-right">Items Subtotal</th>
                   <th className="py-3 px-4 text-right">Fees</th>
                   <th className="py-3 px-4 text-right">Total Amount</th>
@@ -228,6 +236,10 @@ export default function TransactionHistory({
                         {/* Date */}
                         <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                           {formatDate(tx.date)}
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                          {formatTransactionTime(tx.transactionMadeAt) || '—'}
                         </td>
 
                         {/* Entered by user */}
@@ -256,6 +268,10 @@ export default function TransactionHistory({
                               <ChevronDown className="w-3 h-3" />
                             )}
                           </button>
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-700 whitespace-nowrap">
+                          {getTransactionPaymentMethods(tx).join(', ') || '—'}
                         </td>
 
                         {/* Items Subtotal */}
@@ -298,7 +314,7 @@ export default function TransactionHistory({
                       {/* Expanded Line Items Detail */}
                       {isExpanded && (
                         <tr className="bg-slate-50/80">
-                          <td colSpan="9" className="px-6 py-4">
+                          <td colSpan="11" className="px-6 py-4">
                             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
                               <div className="flex items-center justify-between mb-3 text-xs">
                                 <span className="font-bold text-slate-900">
@@ -316,7 +332,8 @@ export default function TransactionHistory({
                                     <th className="pb-1.5">Item Name / Description</th>
                                     <th className="pb-1.5 text-center">Quantity</th>
                                     <th className="pb-1.5 text-right">Unit Price</th>
-                                    <th className="pb-1.5 text-right">Subtotal</th>
+                                    <th className="pb-1.5">Payment Method</th>
+                                    <th className="pb-1.5 text-right">Transaction Fees</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -326,13 +343,14 @@ export default function TransactionHistory({
                                       <td className="py-1.5 text-slate-800 font-medium">{item.name}</td>
                                       <td className="py-1.5 text-center text-blue-700 font-semibold">{item.quantity}</td>
                                       <td className="py-1.5 text-right text-slate-600">{formatCurrency(item.price)}</td>
-                                      <td className="py-1.5 text-right font-bold text-emerald-600">{formatCurrency(item.subtotal)}</td>
+                                      <td className="py-1.5 text-slate-700">{getPaymentMethodLabel(item.paymentMethod) || '—'}</td>
+                                      <td className="py-1.5 text-right font-bold text-amber-700">{formatCurrency(item.transactionFee)}</td>
                                     </tr>
                                   ))}
                                   {/* Fees line */}
                                   <tr className="bg-amber-50/50">
-                                    <td colSpan="4" className="py-2 text-right font-semibold text-amber-800">
-                                      Transaction Fees ({tx.feesNote || 'Handling / processing'}):
+                                    <td colSpan="5" className="py-2 text-right font-semibold text-amber-800">
+                                      Total Transaction Fees ({tx.feesNote || getTransactionPaymentMethods(tx).join(', ') || 'Handling / processing'}):
                                     </td>
                                     <td className="py-2 text-right font-bold text-amber-700">
                                       +{formatCurrency(tx.fees)}
@@ -341,7 +359,7 @@ export default function TransactionHistory({
                                   {/* Customer info */}
                                   {(tx.customer || tx.notes) && (
                                     <tr className="bg-slate-50/70 border-t border-slate-200">
-                                      <td colSpan="5" className="py-2 px-1 text-slate-700">
+                                      <td colSpan="6" className="py-2 px-1 text-slate-700">
                                         <span className="font-semibold text-slate-900">Customer: </span>
                                         {tx.customer || tx.notes}
                                       </td>
@@ -349,7 +367,7 @@ export default function TransactionHistory({
                                   )}
                                   {/* Grand total */}
                                   <tr className="bg-slate-50">
-                                    <td colSpan="4" className="py-2 text-right font-bold text-slate-900">
+                                    <td colSpan="5" className="py-2 text-right font-bold text-slate-900">
                                       Total Amount:
                                     </td>
                                     <td className="py-2 text-right font-black text-emerald-600 text-sm">
