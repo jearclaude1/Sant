@@ -54,7 +54,7 @@ export const getCurrentUser = () => {
   try {
     const raw = localStorage.getItem(CURRENT_USER_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      return { ...JSON.parse(raw), role: 'user' };
     }
   } catch (e) {
     console.error('Error reading current user', e);
@@ -99,7 +99,7 @@ export const generateVerificationCode = () => {
 };
 
 // Initiate user registration (returns verification code for verification step)
-export const initiateRegistration = async ({ username, telephone, password }) => {
+export const initiateRegistration = async ({ username, telephone, password, adminRequested = false }) => {
   const cleanPhone = (telephone || '').trim().replace(/\s+/g, '');
   const cleanUsername = (username || '').trim();
 
@@ -129,6 +129,7 @@ export const initiateRegistration = async ({ username, telephone, password }) =>
     username: cleanUsername,
     telephone: cleanPhone,
     password: password,
+    adminRequested: Boolean(adminRequested),
     verificationCode: verificationCode,
     initiatedAt: Date.now()
   };
@@ -175,6 +176,8 @@ export const verifyAndCompleteRegistration = async ({ pendingUser, enteredCode }
     username: pendingUser.username,
     telephone: pendingUser.telephone,
     password: pendingUser.password,
+    role: 'user',
+    adminRequested: Boolean(pendingUser.adminRequested),
     verified: true,
     registeredAt: new Date().toISOString()
   };
@@ -214,8 +217,9 @@ export const loginUser = async ({ identifier, password }) => {
 
   // Try loading latest users from Firebase if available
   let allUsers = getLocalRegisteredUsers();
+  let cloudUsers = [];
   try {
-    const cloudUsers = await fetchUsersFromFirebase();
+    cloudUsers = await fetchUsersFromFirebase();
     if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
       // Merge with local
       const mergedMap = new Map();
@@ -239,11 +243,38 @@ export const loginUser = async ({ identifier, password }) => {
     throw new Error('Invalid telephone/username or password. Please try again.');
   }
 
+  const cloudUser = cloudUsers.find((user) => {
+    const userPhone = (user.telephone || '').replace(/\D/g, '');
+    const matchedPhone = (matchedUser.telephone || '').replace(/\D/g, '');
+    return userPhone && userPhone === matchedPhone;
+  });
+  const authenticatedUser = {
+    ...matchedUser,
+    role: (cloudUser?.role || '').toLowerCase() === 'admin' ? 'admin' : 'user',
+    adminRequested: Boolean(cloudUser?.adminRequested || matchedUser.adminRequested),
+  };
+
   // Set current user
-  setCurrentUser(matchedUser);
+  setCurrentUser(authenticatedUser);
 
   return {
     success: true,
-    user: matchedUser
+    user: authenticatedUser
   };
+};
+
+export const refreshCurrentUserRole = async (user) => {
+  const updatedUser = { ...user, role: 'user' };
+  const cloudUsers = await fetchUsersFromFirebase();
+  const userPhone = (user.telephone || '').replace(/\D/g, '');
+  const cloudUser = cloudUsers.find((entry) => (
+    (entry.telephone || '').replace(/\D/g, '') === userPhone
+  ));
+
+  if ((cloudUser?.role || '').toLowerCase() === 'admin') {
+    updatedUser.role = 'admin';
+  }
+
+  setCurrentUser(updatedUser);
+  return updatedUser;
 };

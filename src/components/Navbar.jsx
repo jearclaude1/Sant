@@ -157,6 +157,9 @@ export default function Navbar({
                   <p className="text-[9.5px] text-slate-500 font-mono">
                     {currentUser.telephone || 'Staff'}
                   </p>
+                  <p className={`text-[9px] font-bold uppercase ${currentUser.role === 'admin' ? 'text-amber-700' : 'text-slate-500'}`}>
+                    {currentUser.role === 'admin' ? 'Admin' : 'User'}
+                  </p>
                 </div>
               </div>
             )}

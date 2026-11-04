@@ -23,24 +23,44 @@ import {
   generateReceiptNumber
 } from '../utils/formatters';
 
-export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
+export default function TransactionForm({
+  onSave,
+  onUpdate,
+  onCancelEdit,
+  isSubmitting,
+  currentUser,
+  editingTransaction
+}) {
   // First fields: Only name of user inserting data and date of transaction (locked to logged-in user)
-  const [userName, setUserName] = useState(currentUser?.username || '');
-  const [date, setDate] = useState(getTodayDateString());
-  const [receiptNo, setReceiptNo] = useState(generateReceiptNumber());
-  const [customer, setCustomer] = useState('');
+  const [userName, setUserName] = useState(
+    editingTransaction?.userName || editingTransaction?.recordedBy || currentUser?.username || ''
+  );
+  const [date, setDate] = useState(editingTransaction?.date || getTodayDateString());
+  const [receiptNo, setReceiptNo] = useState(editingTransaction?.receiptNo || generateReceiptNumber());
+  const [customer, setCustomer] = useState(editingTransaction?.customer || editingTransaction?.notes || '');
 
   // Auto-fill and lock username when currentUser is loaded
   useEffect(() => {
-    if (currentUser?.username) {
+    if (!editingTransaction && currentUser?.username) {
       setUserName(currentUser.username);
     }
-  }, [currentUser]);
+  }, [currentUser, editingTransaction]);
 
   // Items State (Dynamic array with multi-row support via plus button)
-  const [items, setItems] = useState([
-    { id: '1', name: '', quantity: 1, price: '', paymentMethod: '' }
-  ]);
+  const [items, setItems] = useState(() => {
+    if (!Array.isArray(editingTransaction?.items) || !editingTransaction.items.length) {
+      return [{ id: '1', name: '', quantity: 1, price: '', paymentMethod: '' }];
+    }
+
+    return editingTransaction.items.map((item, index) => {
+      const method = item.paymentMethod || editingTransaction.feeMethod;
+      return {
+        ...item,
+        id: item.id || String(index + 1),
+        paymentMethod: method === 'mobile_money' ? 'momo' : method === 'momo_code' ? 'code' : method || '',
+      };
+    });
+  });
 
   // Error and Notification states
   const [errors, setErrors] = useState({});
@@ -188,11 +208,14 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
 
     const transactionMadeAt = new Date().toISOString();
     const transactionData = {
+      ...(editingTransaction || {}),
       receiptNo,
       date,
-      transactionMadeAt,
-      userName: activeUser,
-      recordedBy: activeUser, // for backwards-compatibility with views
+      transactionMadeAt: editingTransaction?.transactionMadeAt || transactionMadeAt,
+      userName: editingTransaction?.userName || activeUser,
+      recordedBy: editingTransaction?.recordedBy || editingTransaction?.userName || activeUser,
+      updatedBy: currentUser?.username || activeUser,
+      updatedAt: transactionMadeAt,
       notes: cleanCustomer,
       customer: cleanCustomer,
       items: formattedItems,
@@ -204,7 +227,11 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
     };
 
     try {
-      await onSave(transactionData);
+      if (editingTransaction) {
+        await onUpdate(editingTransaction.id, transactionData);
+      } else {
+        await onSave(transactionData);
+      }
 
       // Trigger celebration confetti
       try {
@@ -218,9 +245,13 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
       }
 
       setSuccessMessage(
-        `Transaction voucher #${receiptNo} recorded successfully into database! Total: ${formatCurrency(grandTotal)}`
+        `Transaction voucher #${receiptNo} ${editingTransaction ? 'updated' : 'recorded'} successfully! Total: ${formatCurrency(grandTotal)}`
       );
-      handleReset();
+      if (editingTransaction) {
+        onCancelEdit();
+      } else {
+        handleReset();
+      }
 
       setTimeout(() => {
         setSuccessMessage(null);
@@ -325,6 +356,21 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {editingTransaction && (
+          <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+            <span>
+              Updating transaction <strong className="font-mono">{editingTransaction.receiptNo}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="text-xs font-semibold underline hover:text-amber-700"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {/* FIRST FIELDS: ONLY NAME OF USER INSERTING DATA & DATE OF TRANSACTION */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
           <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -636,14 +682,16 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
 
             {/* Actions */}
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset</span>
-              </button>
+              {!editingTransaction && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reset</span>
+                </button>
+              )}
 
               <button
                 type="submit"
@@ -651,7 +699,11 @@ export default function TransactionForm({ onSave, isSubmitting, currentUser }) {
                 className="flex-1 md:flex-none flex items-center justify-center gap-2.5 px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-600/30 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
-                <span>{isSubmitting ? 'Saving to Database...' : 'Save Data in Database'}</span>
+                <span>
+                  {isSubmitting
+                    ? (editingTransaction ? 'Updating...' : 'Saving to Database...')
+                    : (editingTransaction ? 'Update Transaction' : 'Save Data in Database')}
+                </span>
               </button>
             </div>
           </div>

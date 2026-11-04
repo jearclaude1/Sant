@@ -5,6 +5,7 @@ import {
   ref,
   push,
   set,
+  update,
   remove,
   onValue,
   serverTimestamp
@@ -131,6 +132,38 @@ export const addTransactionToRealtimeDatabase = async (transactionData) => {
   throw new Error('Could not save to Firebase Realtime Database.');
 };
 
+export const updateTransactionInRealtimeDatabase = async (id, transactionData) => {
+  const { db, isConfigured } = initFirebase();
+
+  if (isConfigured && db) {
+    try {
+      await update(ref(db, `${COLLECTION_NAME}/${id}`), {
+        ...transactionData,
+        updatedAt: serverTimestamp(),
+      });
+      return id;
+    } catch (sdkErr) {
+      console.warn('SDK update attempt note, trying REST fallback:', sdkErr.message);
+    }
+  }
+
+  const restUrl = `${firebaseConfig.databaseURL}/${COLLECTION_NAME}/${id}.json`;
+  const res = await fetch(restUrl, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...transactionData,
+      updatedAt: new Date().toISOString(),
+    }),
+  });
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(`Failed to update transaction in Firebase: ${data?.error || res.statusText}`);
+  }
+  return id;
+};
+
 /**
  * Delete a transaction from Realtime Database
  */
@@ -234,6 +267,8 @@ export const saveUserToFirebase = async (userData) => {
     username: userData.username,
     telephone: userData.telephone,
     password: userData.password,
+    role: 'user',
+    adminRequested: Boolean(userData.adminRequested),
     verified: true,
     updatedAt: new Date().toISOString()
   };
@@ -265,4 +300,3 @@ export const fetchUsersFromFirebase = async () => {
   }
   return [];
 };
-

@@ -5,6 +5,7 @@ import {
   Download,
   Trash2,
   Eye,
+  Pencil,
   ChevronDown,
   ChevronUp,
   Receipt,
@@ -26,6 +27,8 @@ import { exportTransactionsToCSV, deduplicateTransactions } from '../services/st
 export default function TransactionHistory({
   transactions = [],
   onDeleteTransaction,
+  onEditTransaction,
+  canDelete = false,
   onViewReceipt,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,7 +88,7 @@ export default function TransactionHistory({
   };
 
   const confirmDelete = async () => {
-    if (!deleteCandidate) return;
+    if (!canDelete || !deleteCandidate || !onDeleteTransaction) return;
     try {
       await onDeleteTransaction(deleteCandidate.id, deleteCandidate.receiptNo);
       setDeleteCandidate(null);
@@ -293,6 +296,14 @@ export default function TransactionHistory({
                         <td className="py-3 px-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
+                              onClick={() => onEditTransaction && onEditTransaction(tx)}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-500 text-slate-600 hover:text-white transition shadow-xs"
+                              title="Edit Transaction"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
                               onClick={() => onViewReceipt && onViewReceipt(tx)}
                               className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-600 text-slate-600 hover:text-white transition shadow-xs"
                               title="View & Print Voucher"
@@ -300,13 +311,15 @@ export default function TransactionHistory({
                               <Eye className="w-3.5 h-3.5" />
                             </button>
 
-                            <button
-                              onClick={() => setDeleteCandidate(tx)}
-                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 text-slate-400 hover:text-white transition shadow-xs"
-                              title="Delete Transaction"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {canDelete && (
+                              <button
+                                onClick={() => setDeleteCandidate(tx)}
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 text-slate-400 hover:text-white transition shadow-xs"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

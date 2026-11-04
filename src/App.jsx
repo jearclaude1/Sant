@@ -9,7 +9,8 @@ import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import AuthPage from './components/AuthPage';
 import {
   getCurrentUser,
-  logoutUser
+  logoutUser,
+  refreshCurrentUserRole
 } from './services/auth';
 import {
   getLocalTransactions,
@@ -20,6 +21,7 @@ import {
   initFirebase,
   addTransactionToRealtimeDatabase,
   deleteTransactionFromRealtimeDatabase,
+  updateTransactionInRealtimeDatabase,
   subscribeToTransactions,
   testFirebaseDirectConnection,
   uploadBulkToRealtimeDatabase
@@ -43,8 +45,28 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [rulesCopied, setRulesCopied] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const isAdmin = currentUser?.role === 'admin';
+  const currentUserTelephone = currentUser?.telephone;
+  const currentUserName = currentUser?.username;
+
+  useEffect(() => {
+    if (!currentUserTelephone) return undefined;
+
+    let active = true;
+    refreshCurrentUserRole({
+      telephone: currentUserTelephone,
+      username: currentUserName,
+    }).then((updatedUser) => {
+      if (active) setCurrentUser(updatedUser);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUserTelephone, currentUserName]);
 
   const verifyFirebase = async () => {
     const res = await testFirebaseDirectConnection();
@@ -142,8 +164,37 @@ export default function App() {
     }
   };
 
+  const handleUpdateTransaction = async (id, updatedTxData) => {
+    setIsSubmitting(true);
+    try {
+      await updateTransactionInRealtimeDatabase(id, updatedTxData);
+      const fullRecord = { ...updatedTxData, id };
+      setTransactions((prev) => {
+        const updated = prev.map((tx) => tx.id === id ? fullRecord : tx);
+        saveLocalTransactions(updated);
+        return updated;
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditTransaction = (transaction) => {
+    setEditingTransaction(transaction);
+    setActiveTab('form');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTransaction(null);
+    setActiveTab('history');
+  };
+
   // Delete transaction
   const handleDeleteTransaction = async (id, receiptNo) => {
+    if (!isAdmin) {
+      throw new Error('Only administrators can delete transactions.');
+    }
+
     if (firebaseStatus === 'connected') {
       try {
         await deleteTransactionFromRealtimeDatabase(id);
@@ -253,9 +304,13 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {activeTab === 'form' && (
           <TransactionForm
+            key={editingTransaction?.id || 'new-transaction'}
             onSave={handleSaveTransaction}
+            onUpdate={handleUpdateTransaction}
+            onCancelEdit={handleCancelEdit}
             isSubmitting={isSubmitting}
             currentUser={currentUser}
+            editingTransaction={editingTransaction}
           />
         )}
 
@@ -276,7 +331,9 @@ export default function App() {
         {activeTab === 'history' && (
           <TransactionHistory
             transactions={transactions}
-            onDeleteTransaction={handleDeleteTransaction}
+            onDeleteTransaction={isAdmin ? handleDeleteTransaction : undefined}
+            onEditTransaction={handleEditTransaction}
+            canDelete={isAdmin}
             onViewReceipt={(tx) => setSelectedReceipt(tx)}
           />
         )}

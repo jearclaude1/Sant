@@ -23,6 +23,7 @@ export default function AuthPage({ onLoginSuccess }) {
   const [regUsername, setRegUsername] = useState('');
   const [regTelephone, setRegTelephone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [adminRequested, setAdminRequested] = useState(false);
 
   // Verification state
   const [pendingUser, setPendingUser] = useState(null);
@@ -117,7 +118,8 @@ export default function AuthPage({ onLoginSuccess }) {
       const res = await initiateRegistration({
         username: regUsername,
         telephone: regTelephone,
-        password: regPassword
+        password: regPassword,
+        adminRequested
       });
 
       if (res.success) {
@@ -375,6 +377,21 @@ export default function AuthPage({ onLoginSuccess }) {
                 required
               />
             </div>
+
+            <label className="flex items-start gap-2.5 my-4 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={adminRequested}
+                onChange={(e) => setAdminRequested(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-blue-600"
+              />
+              <span>
+                Request administrator access
+                <span className="block text-xs text-slate-500 mt-0.5">
+                  New accounts are always registered as users. An administrator must promote your role in Firebase.
+                </span>
+              </span>
+            </label>
 
             <button type="submit" className="auth-btn" disabled={loading}>
               {loading ? (
