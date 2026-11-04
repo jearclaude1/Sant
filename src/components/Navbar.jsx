@@ -121,7 +121,7 @@ export default function Navbar({
             </button>
 
             {/* Database status pill */}
-            <button
+            {/* <button
               onClick={onOpenSettings}
               className={`flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs font-medium border transition shadow-sm sm:gap-2 sm:px-3 sm:py-1.5 ${
                 firebaseConfigured
@@ -139,7 +139,7 @@ export default function Navbar({
                   firebaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                 }`}
               />
-            </button>
+            </button> */}
 
             {/* Current Logged-in User Profile Pill */}
             {currentUser && (
