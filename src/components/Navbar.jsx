@@ -7,9 +7,7 @@ import {
   ListOrdered,
   Database,
   Settings,
-  Sparkles,
   FileSpreadsheet,
-  User,
   LogOut
 } from 'lucide-react';
 import { exportTransactionsToCSV } from '../services/storage';
@@ -25,30 +23,49 @@ export default function Navbar({
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 py-3">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 py-1.5 sm:py-3">
           {/* Logo & Company Title */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('form')}>
-            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 flex items-center justify-center shadow-md shadow-blue-500/20 ring-1 ring-blue-500/20 text-white">
-              <Building2 className="w-6 h-6 text-white" />
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-center gap-1.5 text-left sm:flex-none sm:gap-3"
+            onClick={() => setActiveTab('form')}
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-500/20 sm:h-11 sm:w-11 sm:rounded-xl">
+              <Building2 className="h-4 w-4 text-white sm:h-6 sm:w-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">
+                <span className="hidden font-extrabold text-xl tracking-tight text-slate-900 sm:inline">
                   Santa Columbus Apartments
                 </span>
+                <span className="block font-extrabold text-[11px] leading-tight tracking-tight text-slate-900 sm:hidden">
+                  Santa Columbus<br />Apartments
+                </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="truncate text-[8px] font-medium leading-tight text-slate-500 sm:text-xs">
                 Apartment Expense & Transaction Tracker
               </p>
             </div>
-          </div>
+          </button>
 
           {/* Navigation Tabs */}
-          <nav className="hidden md:flex items-center space-x-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-            
+          <nav aria-label="Main navigation" className="hidden xl:flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActiveTab('form')}
+              aria-current={activeTab === 'form' ? 'page' : undefined}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeTab === 'form'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+              }`}
+            >
+              <PlusCircle className={`w-4 h-4 ${activeTab === 'form' ? 'text-white' : 'text-emerald-600'}`} />
+              <span>New Entry</span>
+            </button>
             <button
               onClick={() => setActiveTab('daily')}
+              aria-current={activeTab === 'daily' ? 'page' : undefined}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'daily'
                   ? 'bg-blue-600 text-white shadow-sm'
@@ -61,6 +78,7 @@ export default function Navbar({
 
             <button
               onClick={() => setActiveTab('monthly')}
+              aria-current={activeTab === 'monthly' ? 'page' : undefined}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'monthly'
                   ? 'bg-blue-600 text-white shadow-sm'
@@ -73,6 +91,7 @@ export default function Navbar({
 
             <button
               onClick={() => setActiveTab('history')}
+              aria-current={activeTab === 'history' ? 'page' : undefined}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'history'
                   ? 'bg-blue-600 text-white shadow-sm'
@@ -90,7 +109,7 @@ export default function Navbar({
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2.5">
             {/* Quick CSV Export */}
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
@@ -104,14 +123,14 @@ export default function Navbar({
             {/* Database status pill */}
             <button
               onClick={onOpenSettings}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition shadow-sm ${
+              className={`flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs font-medium border transition shadow-sm sm:gap-2 sm:px-3 sm:py-1.5 ${
                 firebaseConfigured
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
                   : 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
               }`}
               title="Click to configure Firebase"
             >
-              <Database className="w-3.5 h-3.5" />
+              <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="hidden sm:inline font-semibold">
                 {firebaseConfigured ? 'Firebase Connected' : 'Firebase Setup'}
               </span>
@@ -125,10 +144,10 @@ export default function Navbar({
             {/* Current Logged-in User Profile Pill */}
             {currentUser && (
               <div
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-xs shadow-2xs"
+                className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs shadow-2xs sm:gap-2 sm:px-2.5 sm:rounded-xl"
                 title={`Logged in as ${currentUser.username} (${currentUser.telephone || 'Verified'})`}
               >
-                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] sm:text-[11px] shrink-0">
                   {currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="hidden sm:block text-left leading-tight">
@@ -146,10 +165,10 @@ export default function Navbar({
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-300 hover:border-rose-300 text-xs font-semibold shadow-xs transition"
+                className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-300 hover:border-rose-300 text-xs font-semibold shadow-xs transition"
                 title="Log out of MIS"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="hidden md:inline">Logout</span>
               </button>
             )}
@@ -157,53 +176,57 @@ export default function Navbar({
             {/* Settings button */}
             <button
               onClick={onOpenSettings}
-              className="p-2 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm transition"
+              className="p-1.5 sm:p-2 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm transition"
               title="System & Database Settings"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-200 bg-white">
+        <nav aria-label="Main navigation" className="xl:hidden flex items-center justify-around gap-1 border-t border-slate-200 bg-white py-1 sm:py-2">
           <button
             onClick={() => setActiveTab('form')}
-            className={`flex flex-col items-center py-1 text-xs ${
-              activeTab === 'form' ? 'text-blue-600 font-bold' : 'text-slate-600'
+            aria-current={activeTab === 'form' ? 'page' : undefined}
+            className={`flex min-w-0 flex-1 flex-col items-center rounded-lg py-1 text-[10px] transition-colors sm:text-xs ${
+              activeTab === 'form' ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <PlusCircle className="w-4 h-4 mb-0.5 text-emerald-600" />
+            <PlusCircle className="mb-0.5 h-3.5 w-3.5 text-emerald-600 sm:h-4 sm:w-4" />
             <span>New Entry</span>
           </button>
           <button
             onClick={() => setActiveTab('daily')}
-            className={`flex flex-col items-center py-1 text-xs ${
-              activeTab === 'daily' ? 'text-blue-600 font-bold' : 'text-slate-600'
+            aria-current={activeTab === 'daily' ? 'page' : undefined}
+            className={`flex min-w-0 flex-1 flex-col items-center rounded-lg py-1 text-[10px] transition-colors sm:text-xs ${
+              activeTab === 'daily' ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <Calendar className="w-4 h-4 mb-0.5 text-amber-600" />
+            <Calendar className="mb-0.5 h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
             <span>Daily</span>
           </button>
           <button
             onClick={() => setActiveTab('monthly')}
-            className={`flex flex-col items-center py-1 text-xs ${
-              activeTab === 'monthly' ? 'text-blue-600 font-bold' : 'text-slate-600'
+            aria-current={activeTab === 'monthly' ? 'page' : undefined}
+            className={`flex min-w-0 flex-1 flex-col items-center rounded-lg py-1 text-[10px] transition-colors sm:text-xs ${
+              activeTab === 'monthly' ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <BarChart3 className="w-4 h-4 mb-0.5 text-blue-600" />
+            <BarChart3 className="mb-0.5 h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4" />
             <span>Monthly</span>
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex flex-col items-center py-1 text-xs ${
-              activeTab === 'history' ? 'text-blue-600 font-bold' : 'text-slate-600'
+            aria-current={activeTab === 'history' ? 'page' : undefined}
+            className={`flex min-w-0 flex-1 flex-col items-center rounded-lg py-1 text-[10px] transition-colors sm:text-xs ${
+              activeTab === 'history' ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <ListOrdered className="w-4 h-4 mb-0.5 text-purple-600" />
+            <ListOrdered className="mb-0.5 h-3.5 w-3.5 text-purple-600 sm:h-4 sm:w-4" />
             <span>History</span>
           </button>
-        </div>
+        </nav>
       </div>
     </header>
   );

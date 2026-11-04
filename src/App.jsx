@@ -250,7 +250,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {activeTab === 'form' && (
           <TransactionForm
             onSave={handleSaveTransaction}
@@ -305,7 +305,7 @@ export default function App() {
       {/* Footer */}
       <footer className="no-print mt-auto border-t border-slate-200 bg-white py-6 text-slate-500 text-xs text-center shadow-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-center sm:justify-start">
             <div className="h-6 w-auto px-1.5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] border border-blue-200">
               SCA
             </div>
@@ -316,7 +316,7 @@ export default function App() {
             <span>Property Expense & Transaction Ledger</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <span>
               Cumulative Recorded Spend:{' '}
               <strong className="text-emerald-600 font-bold">

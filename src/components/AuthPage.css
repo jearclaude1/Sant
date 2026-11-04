@@ -1,23 +1,24 @@
-/* Neumorphic Soft-UI Styling based on User's HTML and CSS */
 .auth-page-wrapper {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: #f0f4f8;
+  background:
+    radial-gradient(ellipse at top left, rgba(219, 234, 254, 0.8), transparent 42%),
+    linear-gradient(135deg, #f8fafc 0%, #eef4fb 100%);
   font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
-  color: #777;
+  color: #475569;
   padding: 20px 15px;
 }
 
 .login {
   width: 100%;
-  max-width: 380px;
-  padding: 35px 28px;
-  background: #e8edf3;
-  border-radius: 25px;
+  max-width: 400px;
+  padding: 34px 30px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
   text-align: center;
-  box-shadow: 12px 12px 24px #cbcfd5, -12px -12px 24px #ffffff;
-  transition: all 0.3s ease;
+  box-shadow: 0 24px 60px -32px rgba(15, 23, 42, 0.32), 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .login-brand {
@@ -31,32 +32,32 @@
   width: 48px;
   height: 48px;
   border-radius: 16px;
-  background: #e8edf3;
+  background: linear-gradient(135deg, #2563eb, #4338ca);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 10px;
-  color: #4bb3d0;
+  color: #fff;
   font-size: 20px;
-  box-shadow: 5px 5px 10px #cbd0d6, -5px -5px 10px #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
 }
 
 .login-brand-title {
   font-size: 16px;
   font-weight: 800;
-  color: #444;
+  color: #0f172a;
   letter-spacing: -0.2px;
 }
 
 .login-brand-sub {
   font-size: 11px;
-  color: #888;
+  color: #64748b;
   margin-top: 2px;
 }
 
 .login h1 {
   margin-bottom: 18px;
-  color: #555;
+  color: #0f172a;
   font-size: 22px;
   font-weight: 700;
 }
@@ -64,30 +65,30 @@
 /* Tabs for Login / Sign Up */
 .auth-tabs {
   display: flex;
-  background: #e8edf3;
-  border-radius: 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 4px;
   margin-bottom: 20px;
-  box-shadow: inset 3px 3px 6px #cbd0d6, inset -3px -3px 6px #ffffff;
 }
 
 .auth-tab-btn {
   flex: 1;
   border: 0;
   background: transparent;
-  color: #888;
+  color: #64748b;
   font-weight: 600;
   font-size: 13px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .auth-tab-btn.active {
-  background: #e8edf3;
-  color: #4bb3d0;
-  box-shadow: 4px 4px 8px #cbd0d6, -4px -4px 8px #ffffff;
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
   font-weight: 700;
 }
 
@@ -100,24 +101,21 @@
   height: 48px;
   margin: 14px 0;
   padding: 0 15px;
-  border-radius: 12px;
-  background: #e8edf3;
-  box-shadow:
-    inset 4px 4px 7px 0px #cbd0d6,
-    inset -4px -4px 7px 0px #ffffff;
-  transition: all 0.2s ease;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus-within {
-  box-shadow:
-    inset 5px 5px 8px 0px #bec3c9,
-    inset -5px -5px 8px 0px #ffffff,
-    0 0 0 2px rgba(75, 179, 208, 0.3);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .input i {
   width: 25px;
-  color: #777;
+  color: #64748b;
   font-size: 14px;
   text-align: center;
   margin-right: 8px;
@@ -131,13 +129,13 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #444;
+  color: #0f172a;
   font-size: 13.5px;
   font-family: inherit;
 }
 
 .input input::placeholder {
-  color: #9aa1a9;
+  color: #94a3b8;
 }
 
 /* Neumorphic Button */
@@ -147,14 +145,14 @@
   height: 48px;
   margin: 18px 0 10px 0;
   border: 0;
-  border-radius: 25px;
-  background: #4bb3d0;
+  border-radius: 10px;
+  background: #2563eb;
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 5px 5px 10px #cbd0d6, -5px -5px 10px #ffffff;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -162,13 +160,13 @@
 }
 
 .login button.auth-btn:hover {
-  background: #3fa1bd;
-  box-shadow: 3px 3px 7px #cbd0d6, -3px -3px 7px #ffffff;
+  background: #1d4ed8;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.24);
   transform: translateY(-1px);
 }
 
 .login button.auth-btn:active {
-  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
   transform: translateY(1px);
 }
 
@@ -185,28 +183,29 @@
   height: 42px;
   margin: 6px 0;
   border: 0;
-  border-radius: 25px;
-  background: #e8edf3;
-  color: #666;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #475569;
   font-weight: 600;
   font-size: 12.5px;
   cursor: pointer;
-  box-shadow: 4px 4px 8px #cbd0d6, -4px -4px 8px #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
 
 .login button.auth-btn-secondary:hover {
-  color: #444;
-  box-shadow: 2px 2px 5px #cbd0d6, -2px -2px 5px #ffffff;
+  color: #1e293b;
+  background: #f8fafc;
 }
 
 /* Verification Code Card */
 .verification-card {
-  background: #e8edf3;
-  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   padding: 18px 14px;
   margin: 12px 0 16px 0;
-  box-shadow: inset 3px 3px 6px #cbd0d6, inset -3px -3px 6px #ffffff;
   text-align: center;
 }
 

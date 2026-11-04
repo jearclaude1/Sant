@@ -328,7 +328,7 @@ export default function AuthPage({ onLoginSuccess }) {
             </button>
 
             <p>
-              Don't have an account? <b>or</b>{' '}
+              Don't have an account?{' '}
               <a onClick={() => handleSwitchMode('register')}>Sign Up</a>
             </p>
           </form>
@@ -387,7 +387,7 @@ export default function AuthPage({ onLoginSuccess }) {
             </button>
 
             <p>
-              Already registered? <b>or</b>{' '}
+              Already registered?{' '}
               <a onClick={() => handleSwitchMode('login')}>Login</a>
             </p>
           </form>
